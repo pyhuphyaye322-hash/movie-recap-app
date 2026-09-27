@@ -1,5 +1,4 @@
 streamlit
-requests
 google-generativeai
 edge-tts
-yt-dlp
+asyncio

@@ -99,7 +99,7 @@ with st.sidebar:
     st.image("https://img.icons8.com/fluency/96/movie-studio.png", width=64)
     st.title("⚙️ စနစ် ဆက်တင်များ")
     
-    gemini_key = st.text_input("🔑 Gemini AI API Key ထည့်ပါ:", type="password", placeholder="AIzaSy...")
+    gemini_key = st.text_input("🔑 Gemini AI API Key ထည့်ပါ:", type="password", placeholder="AQ... သို့မဟုတ် AIzaSy...")
     
     st.divider()
     st.subheader("🎙️ Voice & TTS ဆက်တင်")
@@ -146,32 +146,19 @@ with tab1:
             st.warning("🔑 ကျေးဇူးပြု၍ Sidebar တွင် Gemini API Key ကို ထည့်သွင်းပါ။")
         else:
             try:
-                input_content = youtube_url
+                input_content = youtube_url if youtube_url else ""
                 if uploaded_file is not None:
                     input_content += "\n" + uploaded_file.read().decode("utf-8", errors="ignore")
 
                 with st.status("🎬 Movie Recap ဖန်တီးနေပါသည်...", expanded=True) as status:
                     st.write("🧠 AI မှ စနစ်သုံး Prompt မူဘောင်အတိုင်း စခရင်ပရစ် ရေးသားနေပါသည်...")
-                    genai.configure(api_key=gemini_key)
+                    genai.configure(api_key=gemini_key.strip())
                     
-                    # Gemini Model Dynamic Selector
-                    model_names = ["gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"]
-                    ai_response = None
-                    
+                    # Gemini Model Call
+                    model = genai.GenerativeModel("gemini-1.5-flash")
                     user_prompt = f"{system_prompt_content}\n\n[အထူးညွှန်ကြားချက်များ]: {extra_notes}\n\n[မူရင်း Transcript/URL အချက်အလက်]:\n{input_content}"
                     
-                    for m_name in model_names:
-                        try:
-                            model = genai.GenerativeModel(m_name)
-                            ai_response = model.generate_content(user_prompt)
-                            if ai_response:
-                                break
-                        except Exception:
-                            continue
-                            
-                    if not ai_response:
-                        raise Exception("Gemini API မော်ဒယ်ချိတ်ဆက်မှု မအောင်မြင်ပါ။ API Key ကို ပြန်စစ်ပေးပါ။")
-
+                    ai_response = model.generate_content(user_prompt)
                     generated_script = ai_response.text
 
                     st.write("🎙️ TTS မူဘောင်အတိုင်း မြန်မာ အသံထွက် (Voiceover) ဖန်တီးနေပါသည်...")

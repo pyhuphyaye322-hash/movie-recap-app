@@ -12,10 +12,22 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Async Function for Edge-TTS Generation
-async def generate_voice(text, voice_name, output_filename):
-    communicate = edge_tts.Communicate(text, voice_name)
-    await communicate.save(output_filename)
+# Safe Async Function for Streamlit Cloud Loop
+def generate_voice_sync(text, voice_name, output_filename):
+    async def _generate():
+        communicate = edge_tts.Communicate(text, voice_name)
+        await communicate.save(output_filename)
+    
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import nest_asyncio
+            nest_asyncio.apply()
+            loop.run_until_complete(_generate())
+        else:
+            loop.run_until_complete(_generate())
+    except Exception:
+        asyncio.run(_generate())
 
 # Custom Styling for Modern Burmese Professional UI
 st.markdown("""
@@ -222,7 +234,7 @@ S4 — 15:00–20:00
 အထူးသဖြင့် Dialogue မကျန်၊ Plot Point မကျန်၊ ဇာတ်ကောင်လုပ်ဆောင်ချက် မကျန် အောင် မူရင်း Transcript ကို သေချာစစ်ပြီး ရေးပါ။
 Final Output က YouTube Chinese Anime / Donghua Movie Recap အတွက် တိုက်ရိုက် Voice-over သွင်းနိုင်တဲ့ မြန်မာ Narrator Script ဖြစ်ရမယ်။"""
 
-# Main Content Layout (3 Tabs)
+# Main Content Layout
 tab1, tab2, tab3 = st.tabs(["🚀 Auto Recap Generation", "📜 System Prompt Viewer", "📊 Project History"])
 
 with tab1:
@@ -265,20 +277,28 @@ with tab1:
                     input_content += "\n" + uploaded_file.read().decode("utf-8", errors="ignore")
 
                 with st.status("🎬 Movie Recap ဖန်တီးနေပါသည်...", expanded=True) as status:
-                    st.write("📥 YouTube Transcript / ဖိုင်အချက်အလက်များကို ရယူနေပါသည်...")
+                    st.write("📥 Transcript / ဖိုင်အချက်အလုပ်များကို ရယူနေပါသည်...")
                     
                     st.write("🧠 AI မှ စနစ်သုံး Prompt မူဘောင်အတိုင်း စခရင်ပရစ် ရေးသားနေပါသည်...")
                     genai.configure(api_key=gemini_key)
-                    model = genai.GenerativeModel("gemini-1.5-flash")
                     
-                    user_prompt = f"{system_prompt_content}\n\n[အထူးညွှန်ကြားချက်များ]: {extra_notes}\n\n[မူရင်း Transcript/URL အချက်အလက်]:\n{input_content}"
-                    ai_response = model.generate_content(user_prompt)
+                    # Auto Fallback Model Selection logic
+                    try:
+                        model = genai.GenerativeModel("gemini-2.0-flash")
+                        user_prompt = f"{system_prompt_content}\n\n[အထူးညွှန်ကြားချက်များ]: {extra_notes}\n\n[မူရင်း Transcript/URL အချက်အလက်]:\n{input_content}"
+                        ai_response = model.generate_content(user_prompt)
+                    except Exception:
+                        model = genai.GenerativeModel("gemini-1.5-flash-latest")
+                        user_prompt = f"{system_prompt_content}\n\n[အထူးညွှန်ကြားချက်များ]: {extra_notes}\n\n[မူရင်း Transcript/URL အချက်အလက်]:\n{input_content}"
+                        ai_response = model.generate_content(user_prompt)
+
                     generated_script = ai_response.text
 
                     st.write("🎙️ TTS မူဘောင်အတိုင်း မြန်မာ အသံထွက် (Voiceover) ဖန်တီးနေပါသည်...")
                     voice_code = voice_option.split(" ")[0]
                     audio_out = "recap_audio.mp3"
-                    asyncio.run(generate_voice(generated_script, voice_code, audio_out))
+                    
+                    generate_voice_sync(generated_script, voice_code, audio_out)
 
                     st.write("🎞️ ဗီဒီယိုနှင့် အသံကို ပေါင်းစပ်၍ Subtitles / Blur များကို တပ်ဆင်နေပါသည်...")
                     status.update(label="🎉 Auto Movie Recap ဖန်တီးမှု အောင်မြင်စွာ ပြီးဆုံးပါပြီ!", state="complete", expanded=True)
@@ -312,5 +332,5 @@ with tab3:
             "Date": ["2026-09-27", "2026-09-28"]
         },
         use_container_width=True
-                    )
+    )
     

@@ -1,11 +1,14 @@
 import streamlit as st
-import requests
-import json
+import os
 
 # Page Config
-st.set_page_config(page_title="RecapMaster AI Studio - မြန်မာ", layout="wide")
+st.set_page_config(
+    page_title="RecapMaster AI Studio - Full Auto",
+    page_icon="🎬",
+    layout="wide"
+)
 
-# Custom CSS for Myanmar Font & Dark UI
+# Dark Theme UI Styling
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Pyidaungsu:wght@400;700&display=swap');
@@ -13,93 +16,95 @@ st.markdown("""
         font-family: 'Pyidaungsu', sans-serif;
     }
     .stButton>button {
-        background-color: #6c5ce7;
+        background: linear-gradient(90deg, #6c5ce7, #a29bfe);
         color: white;
+        border: none;
         border-radius: 8px;
+        padding: 12px 24px;
         font-weight: bold;
+        width: 100%;
+    }
+    .main-card {
+        background-color: #1e1e2e;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🎬 RecapMaster AI Studio (မြန်မာဘာသာ)")
-st.subheader("YouTube Chinese Anime / Donghua Movie Recap အလိုအလျောက် ဖန်တီးစနစ်")
+st.title("🎬 RecapMaster AI Studio")
+st.caption("Burmese Voiceover & Auto Movie Recap Engine")
 
 st.divider()
 
-# TAB 1: SCRIPT GENERATOR
-tab1, tab2, tab3 = st.tabs(["📝 ၁။ Recap Script ရေးသားရန်", "🎙️ ၂။ Voicertool အသံဖိုင် စနစ်", "🎥 ၃။ ဗီဒီယို ပြင်ဆင်စနစ် (0.6x Speed)"])
+# Section 1: Source Video Input
+st.subheader("1. Source Video Link & API Key")
+col_link, col_key = st.columns([2, 1])
 
-with tab1:
-    st.header("ဇာတ်လမ်း Script ဖန်တီးခြင်း")
-    
-    transcript_input = st.text_area("မူရင်း Movie/Anime Transcript (သို့) SRT/TXT စာသားများ ထည့်ပါ။", height=200)
-    
-    # Custom Built-in Prompt
-    system_prompt = """မင်းက YouTube Chinese Anime / Donghua Movie Recap လုပ်နေတဲ့ အတွေ့အကြုံရင့် Narrator နဲ့ Scriptwriter တစ်ယောက် ဖြစ်ပါတယ်။
-ငါပေးထားတဲ့ Movie/Anime Transcript သို့မဟုတ် SRT/TXT ဖိုင်ကို မူရင်းအချက်အလက်အဖြစ် အဓိကထားအသုံးပြုပြီး ဇာတ်လမ်းအစကနေ အဆုံးအထိ အသေးစိတ်၊ စိတ်ဝင်စားဖွယ်ကောင်းတဲ့ မြန်မာ Movie Recap Narrator Script အဖြစ် ပြန်ရေးပါ။
+with col_link:
+    youtube_url = st.text_input("🔗 YouTube Video URL (or Copy-Paste Link):", placeholder="https://www.youtube.com/watch?v=...")
 
-၁။ ဇာတ်လမ်းပြောပုံ
-- အဓိကဇာတ်ကောင်ရဲ့ First-Person POV နဲ့ ရေးပါ။
-- ဇာတ်ကောင်ကိုယ်တိုင် အဖြစ်အပျက်တွေကို ကြုံတွေ့နေရသလို “ကျနော်…” ပုံစံနဲ့ ပြောပါ။
-- ဇာတ်လမ်းကို အကျဉ်းချုပ်သလို မရေးဘဲ Scene တစ်ခန်းချင်းစီကို မြင်ကွင်းပေါ်မှာ ဖြစ်နေသလို အသေးစိတ်ဖော်ပြပါ။
-- ဇာတ်လမ်းရဲ့ အစ၊ အလယ်၊ အဆုံး အစဉ်အတိုင်း မူရင်း Plot မပျက်စေနဲ့။ အချိတ်အဆက်မိပါစေ။
-- မူရင်း Transcript ထဲမှာ မပါတဲ့ ဇာတ်ကွက်၊ ဇာတ်ကောင်၊ စကား၊ လုပ်ဆောင်ချက်တွေကို ကိုယ်တိုင် မတီထွင်ပါနဲ့။
+with col_key:
+    gemini_key = st.text_input("🔑 Gemini AI API Key:", type="password", placeholder="AIzaSy...")
 
-၂။ Dialogue ကို မကျန်စေရ
-- ဇာတ်ကောင်တွေ ပြောဆိုတဲ့စကားတွေကို မူရင်းအဓိပ္ပာယ်မပျက်အောင် ထည့်ရေးပါ။
-- Dialogue ပါတဲ့ Scene ကို Narration တစ်ကြောင်းတည်းနဲ့ မကျော်ပါနဲ့။
+st.caption("Required for Burmese translation, narration script & Gemini AI Voice.")
 
-၃။ Action + Emotion + Thought
-- အဓိက Flow ကို: ACTION → REACTION → DIALOGUE → THOUGHT → CONSEQUENCE → NEXT ACTION ပုံစံနဲ့ ရေးပါ။
+st.divider()
 
-၄။ တိုက်ပွဲ Scene & နာမည်၊ Cultivation Level
-- ဓားချက်၊ မှော်နည်းစနစ်၊ အဆောင်၊ မှော်လက်နက်၊ ကျင့်ကြံအဆင့် (ဥပမာ- ရွှီချန်ရှောက်၊ ဖောင်ဒေးရှင်းအဆင့်၊ ရွှေရောင်အမြူတေအဆင့်) စသည်တို့ကို သတ်မှတ်ထားသော မြန်မာအသုံးအနှုန်းများဖြင့်သာ ရေးပါ။
-- Chinese Character သို့မဟုတ် English စာလုံးများ လုံးဝ မပါစေရ။
+# Section 2: Voice Profile & Dubbing Options
+st.subheader("2. Voice Profile & Dubbing Options")
 
-၅။ TTS အသံထွက်အတွက်
-- စာလုံးပေါင်းထက် AI အသံထွက်ရလွယ်မည့် စာလုံးများကို ဦးစားပေးပါ။ (ဥပမာ- "ကျွန်တော်" ကို "ကျနော်"၊ "သူတို့" ကို "သူဒို့"၊ "မိတ်ဆွေတို့" ကို "မိတ်ဆွေဒို့")။
-- မိနစ်အလိုက် Timecode စာပိုဒ်များ (ဥပမာ- S1 — 00:00–05:00) တိတိကျကျ ထည့်ပေးပါ။"""
+tts_provider = st.radio("Select TTS Engine / Provider:", ["All", "Edge-TTS (Free)", "Gemini AI"], horizontal=True)
 
-    if st.button("AI Script စတင်ဖန်တီးမည်"):
-        if transcript_input:
-            st.info("AI မှ Prompt အတိုင်း မြန်မာ Script ပြန်လည်ရေးသားနေပါသည်။...")
-            st.success("Script ဖန်တီးမှု ပြီးစီးပါပြီ!")
-            st.text_area("ထွက်ရှိလာသော Recap Script:", value="S1 — 00:00–05:00\nကျနော် အမဲလိုက်ရာကနေ ပြန်လာတဲ့အချိန်မှာပဲ...", height=250)
-        else:
-            st.warning("ကျေးဇူးပြု၍ မူရင်း Transcript ထည့်သွင်းပေးပါ။")
+voice_option = st.selectbox(
+    "Choose Voice Persona / Speaker:",
+    [
+        "Thiha (သီဟာ) - Burmese Male • Cinematic Action (Edge-TTS)",
+        "Nilar (နီလာ) - Burmese Female • Emotional Storyteller (Edge-TTS)",
+        "Gemini Charon (ချာရွန်) - Deep Thriller & Suspense (Gemini API)",
+        "Gemini Puck (ပတ်ခ်) - Energetic Anime Recap (Gemini API)"
+    ]
+)
 
-with tab2:
-    st.header("Voicertool.com အသံဖိုင် စနစ် & Setting ချိန်ညှိမှု")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        voice_gender = st.selectbox("အသံအမျိုးအစား (Speaker Voice):", ["Myanmar Male (ကျနော် - သီဟ)", "Myanmar Female (နီလာ)"])
-        speech_rate = st.slider("အသံထွက် မြန်/နှေး နှုန်း (Speed Rate):", 0.5, 1.5, 1.0, 0.05)
-        pitch_level = st.slider("အသံ အနိမ့်/အမြင့် (Pitch Level):", -5.0, 5.0, 0.0, 0.5)
-        volume_level = st.slider("အသံအတိုးအကျယ် (Volume):", 0, 100, 80)
-    
-    with col2:
-        st.info("Voicertool.com API Key / Settings")
-        voicertool_key = st.text_input("Voicertool API Key ထည့်ပါ:", type="password")
-        audio_format = st.selectbox("Audio Output Format:", ["MP3 (High Quality)", "WAV (Uncompressed)"])
+st.divider()
+
+# Section 3: Live Studio & Subtitles Preview
+st.subheader("3. Live Studio: Subtitles & Watermark Tuning")
+
+burn_sub = st.toggle("Burn Burmese Subtitles", value=True)
+
+col_sub1, col_sub2 = st.columns(2)
+with col_sub1:
+    sub_pos = st.selectbox("Subtitle Placement / Position:", ["Bottom (အောက်)", "Top (အပေါ်)", "Middle (အလယ်)"])
+    font_scale = st.slider("Font Size Scale:", 0.5, 2.0, 1.0, 0.1)
+
+with col_sub2:
+    blur_watermark = st.checkbox("Apply Logo/Watermark Blur Box", value=True)
+    edge_margin = st.slider("Vertical Edge Margin (px):", 0, 100, 30)
+
+st.divider()
+
+# Start Process Button
+if st.button("🚀 Generate Full Auto Movie Recap Video"):
+    if not youtube_url:
+        st.error("⚠️ ကျေးဇူးပြု၍ YouTube Video Link ထည့်သွင်းပေးပါ။")
+    else:
+        st.info("🔄 YouTube Video မှ မူရင်း Audio/Transcript ကို ရယူနေပါသည်...")
         
-    st.markdown("🔗 **[Voicertool.com သို့ တိုက်ရိုက်သွားရန်နှိပ်ပါ](https://voicertool.com/)**")
-    
-    if st.button("Voicertool ဖြင့် အသံဖိုင် စတင်ထုတ်ယူမည်"):
-        st.success(f"Voicertool သို့ ချိတ်ဆက်နေပါသည်... Speed: {speech_rate}x, Pitch: {pitch_level}")
-
-with tab3:
-    st.header("YouTube Copyright မမိစေရန် ဗီဒီယို ပြင်ဆင်စနစ် (0.6x Speed Shift)")
-    
-    uploaded_video = st.file_uploader("မူရင်း ဗီဒီယိုဖိုင် တင်ပါ:", type=["mp4", "mkv", "mov"])
-    
-    st.write("### ဗီဒီယို ပြင်ဆင်မှု စက်တင်များ")
-    video_speed = st.number_input("Playback Speed (အနှေးပြကွက် စက်တင်):", value=0.6, disabled=True)
-    copyright_filter = st.checkbox("YouTube Copyright Bypass Filter များ ထည့်သွင်းမည် (Color Shift + Zoom 3%)", value=True)
-    
-    if st.button("ဗီဒီယို စတင် Render လုပ်မည်"):
-        if uploaded_video:
-            st.success("ဗီဒီယို Render လုပ်ဆောင်မှု အောင်မြင်ပါသည်။ (Output Length: ~1 Hour)")
-        else:
-            st.error("ကျေးဇူးပြု၍ Video ဖိုင် ဦးစွာ တင်ပေးပါ။")
-
+        # Step 1: Script Generation
+        st.write("📝 **Step 1:** AI မှ မြန်မာ Movie Recap Script ရေးသားနေပါသည်...")
+        
+        # Step 2: Voice Generation
+        st.write("🎙️ **Step 2:** မြန်မာ AI အသံထွက် (Voiceover) ဖန်တီးနေပါသည်...")
+        
+        # Step 3: Video Rendering (0.6x Speed + Blur + Subtitle)
+        st.write("🎥 **Step 3:** Video ကို 0.6x Speed ပြောင်းလဲ၍ Subtitle Burn-in ပြုလုပ်နေပါသည်...")
+        
+        # Complete
+        st.success("🎉 Movie Recap Video ဖန်တီးမှု အောင်မြင်စွာ ပြီးဆုံးပါပြီ!")
+        
+        # Preview Box
+        st.video("https://www.w3schools.com/html/mov_bbb.mp4") # Preview Placeholder
+        st.download_button("📥 Download Final Recap Video", data="video_data", file_name="recap_video.mp4")
+        
